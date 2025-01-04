@@ -11,3 +11,8 @@ test addOne {
 fn addOne(number: i32) i32 {
     return number + 1;
 }
+
+pub fn main() !void {
+    const stdout = std.io.getStdOut().writer();
+    try stdout.print("41 + 1 = {d}\n", .{addOne(41)});
+}
