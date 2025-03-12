@@ -1,3 +1,6 @@
 .zig-cache
 zig-out
 
+/call-c/build/*
+!/call-c/build/.gitkeep
+
