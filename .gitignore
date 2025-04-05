@@ -6,3 +6,5 @@ zig-out
 /call-go/build/*
 !/call-go/build/.gitkeep
 
+sample.db
+
