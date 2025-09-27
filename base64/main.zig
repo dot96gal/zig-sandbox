@@ -176,7 +176,11 @@ pub fn main() !void {
     const encoded_text = try base64.encode(allocator, text);
     const decoded_text = try base64.decode(allocator, etext);
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     try stdout.print("Encoded text: {s}\n", .{encoded_text});
     try stdout.print("Decoded text: {s}\n", .{decoded_text});
+    try stdout.flush();
 }

@@ -15,7 +15,7 @@ pub fn main() !void {
     try s.scheduleIn(.{ .say = .{ .person = &p1, .msg = "hello, world!" } }, 1000);
     try s.scheduleIn(.{ .say = .{ .person = &p2, .msg = "hello, world!" } }, 3000);
 
-    std.time.sleep(std.time.ns_per_ms * 2000);
+    std.Thread.sleep(std.time.ns_per_ms * 2000);
     s.stop();
 }
 
@@ -23,7 +23,7 @@ const Person = struct {
     name: []const u8,
 
     fn say(p: *const Person, msg: []const u8, when: u64) void {
-        std.time.sleep(when);
+        std.Thread.sleep(when);
         std.debug.print("{s} said: {s}\n", .{ p.name, msg });
     }
 };

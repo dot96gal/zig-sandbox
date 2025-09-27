@@ -1,28 +1,35 @@
 const std = @import("std");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer std.debug.assert(gpa.deinit() == .ok);
-    const allocator = gpa.allocator();
+    const allocator = std.heap.page_allocator;
 
     const port = 8000;
     const addr = try std.net.Address.parseIp4("127.0.0.1", port);
-    var net_server = try addr.listen(.{ .reuse_port = true });
-    defer net_server.deinit();
+    var listener = try addr.listen(.{ .reuse_address = true });
+    defer listener.deinit();
 
-    std.debug.print("serving http://localhost:{}\r\n", .{8000});
+    std.log.info("serving http://localhost:{}\r\n", .{port});
 
-    var buffer: [1024]u8 = undefined;
+    while (true) {
+        const connection = listener.accept() catch |err| {
+            std.log.err("Failed to accept connection: {}", .{err});
+            continue;
+        };
 
-    accept: while (true) {
-        var conn = try net_server.accept();
-        defer conn.stream.close();
+        var buffer: [4096]u8 = undefined;
 
-        var http_server = std.http.Server.init(conn, &buffer);
-        while (http_server.state == .ready) {
-            var request = http_server.receiveHead() catch |err| switch (err) {
-                error.HttpConnectionClosing => continue :accept,
-                else => return,
+        var file_reader = connection.stream.reader(&buffer);
+        const reader = &file_reader.file_reader.interface;
+        var file_writer = connection.stream.writer(&buffer);
+        const writer = &file_writer.file_writer.interface;
+
+        var server = std.http.Server.init(reader, writer);
+
+        while (true) {
+            var request = server.receiveHead() catch |err| {
+                if (err == error.HttpConnectionClosing) break;
+                std.log.err("Failed to receive request: {}", .{err});
+                break;
             };
 
             std.debug.print("{}", .{request});
@@ -38,12 +45,15 @@ pub fn main() !void {
             }
 
             if (method == .POST and std.mem.eql(u8, target, "/echo")) {
-                var reader = try request.reader();
-                const body = try reader.readAllAlloc(allocator, 8192);
+                // read header before expired
+                const content_type = request.head.content_type.?;
+
+                // expired header here
+                const body = try (try request.readerExpectContinue(&.{})).allocRemaining(allocator, .unlimited);
                 defer allocator.free(body);
 
                 try request.respond(body, .{ .extra_headers = &.{
-                    .{ .name = "content-type", .value = request.head.content_type.? },
+                    .{ .name = "content-type", .value = content_type },
                 } });
                 continue;
             }

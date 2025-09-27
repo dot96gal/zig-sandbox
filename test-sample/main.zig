@@ -13,6 +13,10 @@ fn addOne(number: i32) i32 {
 }
 
 pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
+
     try stdout.print("41 + 1 = {d}\n", .{addOne(41)});
+    try stdout.flush();
 }

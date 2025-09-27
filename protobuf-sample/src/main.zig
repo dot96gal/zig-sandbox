@@ -3,33 +3,32 @@ const protobuf = @import("protobuf");
 const greeter = @import("./proto/greeter.pb.zig");
 
 test "HelloRequest init" {
-    const allocator = std.testing.allocator;
-
-    var req: greeter.HelloRequest = greeter.HelloRequest.init(allocator);
-    defer req.deinit();
+    var req: greeter.HelloRequest = greeter.HelloRequest{};
 
     const input = "hoge";
     const expected = "hoge";
 
-    req.name = protobuf.ManagedString.static(input);
+    req.name = input;
 
-    try std.testing.expectEqualStrings(expected, req.name.getSlice());
+    try std.testing.expectEqualStrings(expected, req.name);
 }
 
 test "HelloRequest encode" {
     const allocator = std.testing.allocator;
 
-    var req: greeter.HelloRequest = greeter.HelloRequest.init(allocator);
-    defer req.deinit();
+    var req: greeter.HelloRequest = greeter.HelloRequest{};
 
     const input = "hoge";
     const expected = &[_]u8{ 10, 4, 104, 111, 103, 101 };
 
-    req.name = protobuf.ManagedString.static(input);
-    const encoded = try req.encode(allocator);
-    defer allocator.free(encoded);
+    req.name = input;
 
-    try std.testing.expectEqualSlices(u8, expected, encoded);
+    var allocating = std.Io.Writer.Allocating.init(allocator);
+    defer allocating.deinit();
+
+    try req.encode(&allocating.writer, allocator);
+
+    try std.testing.expectEqualSlices(u8, expected, allocating.written());
 }
 
 test "HelloRequest decode" {
@@ -38,68 +37,67 @@ test "HelloRequest decode" {
     const input = &[_]u8{ 10, 4, 104, 111, 103, 101 };
     const expected = "hoge";
 
-    const decoded = try greeter.HelloRequest.decode(input, allocator);
-    defer decoded.deinit();
+    var reader: std.Io.Reader = .fixed(input);
+    var decoded = try greeter.HelloRequest.decode(&reader, allocator);
+    defer decoded.deinit(allocator);
 
-    try std.testing.expectEqualStrings(expected, decoded.name.getSlice());
+    try std.testing.expectEqualStrings(expected, decoded.name);
 }
 
-test "HelloRequest json_encode" {
+test "HelloRequest jsonEncode" {
     const allocator = std.testing.allocator;
 
-    var req: greeter.HelloRequest = greeter.HelloRequest.init(allocator);
-    defer req.deinit();
+    var req: greeter.HelloRequest = greeter.HelloRequest{};
 
     const input = "hoge";
     const expected = "{\"name\":\"hoge\"}";
 
-    req.name = protobuf.ManagedString.static(input);
-    const encoded = try req.json_encode(.{}, allocator);
+    req.name = input;
+    const encoded = try req.jsonEncode(.{}, allocator);
     defer allocator.free(encoded);
 
     try std.testing.expectEqualStrings(expected, encoded);
 }
 
-test "HelloRequest json_decode" {
+test "HelloRequest jsonDecode" {
     const allocator = std.testing.allocator;
 
     const input = "{\"name\":\"hoge\"}";
     const expected = "hoge";
 
-    const decoded = try greeter.HelloRequest.json_decode(input, .{}, allocator);
+    const decoded = try greeter.HelloRequest.jsonDecode(input, .{}, allocator);
     defer decoded.deinit();
 
-    try std.testing.expectEqualSlices(u8, expected, decoded.value.name.getSlice());
+    try std.testing.expectEqualSlices(u8, expected, decoded.value.name);
 }
 
 test "HelloResponse init" {
-    const allocator = std.testing.allocator;
-
-    var res: greeter.HelloResponse = greeter.HelloResponse.init(allocator);
-    defer res.deinit();
+    var res: greeter.HelloResponse = greeter.HelloResponse{};
 
     const input = "fuga";
     const expected = "fuga";
 
-    res.message = protobuf.ManagedString.static(input);
+    res.message = input;
 
-    try std.testing.expectEqualStrings(expected, res.message.getSlice());
+    try std.testing.expectEqualStrings(expected, res.message);
 }
 
 test "HelloResponse encode" {
     const allocator = std.testing.allocator;
 
-    var res: greeter.HelloResponse = greeter.HelloResponse.init(allocator);
-    defer res.deinit();
+    var res: greeter.HelloResponse = greeter.HelloResponse{};
 
     const input = "fuga";
     const expected = &[_]u8{ 10, 4, 102, 117, 103, 97 };
 
-    res.message = protobuf.ManagedString.static(input);
-    const encoded = try res.encode(allocator);
-    defer allocator.free(encoded);
+    res.message = input;
 
-    try std.testing.expectEqualSlices(u8, expected, encoded);
+    var allocating = std.Io.Writer.Allocating.init(allocator);
+    defer allocating.deinit();
+
+    try res.encode(&allocating.writer, allocator);
+
+    try std.testing.expectEqualSlices(u8, expected, allocating.written());
 }
 
 test "HelloResponse decode" {
@@ -108,61 +106,65 @@ test "HelloResponse decode" {
     const input = &[_]u8{ 10, 4, 102, 117, 103, 97 };
     const expected = "fuga";
 
-    const decoded = try greeter.HelloResponse.decode(input, allocator);
-    defer decoded.deinit();
+    var reader: std.Io.Reader = .fixed(input);
+    var decoded = try greeter.HelloResponse.decode(&reader, allocator);
+    defer decoded.deinit(allocator);
 
-    try std.testing.expectEqualStrings(expected, decoded.message.getSlice());
+    try std.testing.expectEqualStrings(expected, decoded.message);
 }
 
-test "HelloReponse json_encode" {
+test "HelloReponse jsonEncode" {
     const allocator = std.testing.allocator;
 
-    var res: greeter.HelloResponse = greeter.HelloResponse.init(allocator);
-    defer res.deinit();
+    var res: greeter.HelloResponse = greeter.HelloResponse{};
 
     const input = "fuga";
     const expected = "{\"message\":\"fuga\"}";
 
-    res.message = protobuf.ManagedString.static(input);
-    const encoded = try res.json_encode(.{}, allocator);
+    res.message = input;
+    const encoded = try res.jsonEncode(.{}, allocator);
     defer allocator.free(encoded);
 
     try std.testing.expectEqualStrings(expected, encoded);
+}
+
+test "HelloResponse jsonDecode" {
+    const allocator = std.testing.allocator;
+
+    const input = "{\"message\":\"fuga\"}";
+    const expected = "fuga";
+
+    const decoded = try greeter.HelloResponse.jsonDecode(input, .{}, allocator);
+    defer decoded.deinit();
+
+    try std.testing.expectEqualSlices(u8, expected, decoded.value.message);
 }
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var req: greeter.HelloRequest = greeter.HelloRequest.init(allocator);
-    defer req.deinit();
+    var req: greeter.HelloRequest = greeter.HelloRequest{};
+    req.name = "hoge";
 
-    req.name = protobuf.ManagedString.static("hoge");
-    std.debug.print("request: {s}\n", .{req.name.getSlice()});
-    std.debug.print("request_encode: {any}\n", .{try req.encode(allocator)});
-    std.debug.print("request_json_encode: {!s}\n", .{try req.json_encode(.{}, allocator)});
+    var allocating = std.Io.Writer.Allocating.init(allocator);
+    defer allocating.deinit();
+    try req.encode(&allocating.writer, allocator);
+    const encoded = allocating.written();
 
-    const decodedReq = try greeter.HelloRequest.decode(&.{ 10, 4, 104, 111, 103, 101 }, allocator);
-    defer decodedReq.deinit();
-    std.debug.print("request_decode: {!s}\n", .{decodedReq.name.getSlice()});
+    const json_encoded = try req.jsonEncode(.{}, allocator);
+    defer allocator.free(json_encoded);
 
-    const decodedJSONReq = try greeter.HelloRequest.json_decode("{\"name\":\"hoge\"}", .{}, allocator);
+    std.debug.print("request: {s}\n", .{req.name});
+    std.debug.print("request_encode: {any}\n", .{encoded});
+    std.debug.print("request_json_encode: {any}\n", .{json_encoded});
+
+    var reader: std.Io.Reader = .fixed(encoded);
+    var decodedReq = try greeter.HelloRequest.decode(&reader, allocator);
+    defer decodedReq.deinit(allocator);
+    std.debug.print("request_decode: {s}\n", .{decodedReq.name});
+
+    const decodedJSONReq = try greeter.HelloRequest.jsonDecode(json_encoded, .{}, allocator);
     defer decodedJSONReq.deinit();
-    std.debug.print("request_json_decode: {!s}\n", .{decodedJSONReq.value.name.getSlice()});
-
-    var res: greeter.HelloResponse = greeter.HelloResponse.init(allocator);
-    defer req.deinit();
-
-    res.message = protobuf.ManagedString.static("fuga");
-    std.debug.print("response: {s}\n", .{res.message.getSlice()});
-    std.debug.print("response_encode: {any}\n", .{try res.encode(allocator)});
-    std.debug.print("response_json_encode: {!s}\n", .{try res.json_encode(.{}, allocator)});
-
-    const decodedRes = try greeter.HelloResponse.decode(&.{ 10, 4, 102, 117, 103, 97 }, allocator);
-    defer decodedRes.deinit();
-    std.debug.print("response_decode: {!s}\n", .{decodedRes.message.getSlice()});
-
-    const decodedJSONRes = try greeter.HelloResponse.json_decode("{\"message\":\"fuga\"}", .{}, allocator);
-    defer decodedJSONRes.deinit();
-    std.debug.print("response_json_decode: {!s}\n", .{decodedJSONRes.value.message.getSlice()});
+    std.debug.print("request_json_decode: {any}\n", .{decodedJSONReq.value});
 }

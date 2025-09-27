@@ -28,7 +28,7 @@
 
     // Tracks the earliest Zig version that the package considers to be a
     // supported use case.
-    .minimum_zig_version = "0.14.0",
+    .minimum_zig_version = "0.15.1",
 
     // This field is optional.
     // Each dependency must either provide a `url` and `hash`, or a `path`.
@@ -37,8 +37,8 @@
     // internet connectivity.
     .dependencies = .{
         .sqlite = .{
-            .url = "git+https://github.com/vrischmann/zig-sqlite#59c06617d5b86546c0c739e73ae01d3965dbe8ce",
-            .hash = "sqlite-3.48.0-F2R_a_uGDgCfOH5UEJYjuOCe-HixnLjToxOdEGAEM3xk",
+            .url = "git+https://github.com/vrischmann/zig-sqlite#6d90ee900d186a7fbb6066f28ee13beeaf8be345",
+            .hash = "sqlite-3.48.0-F2R_a5yODgDFvwwsytm7ZONcSqYBo3qv1PmXOtw3tqLA",
         },
     },
     .paths = .{

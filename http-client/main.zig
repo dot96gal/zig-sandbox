@@ -8,15 +8,15 @@ pub fn main() !void {
     var client = std.http.Client{ .allocator = allocator };
     defer client.deinit();
 
-    var response = std.ArrayList(u8).init(allocator);
-    defer response.deinit();
+    var allocating = std.Io.Writer.Allocating.init(allocator);
+    defer allocating.deinit();
 
-    const result = try client.fetch(.{
+    const response = try client.fetch(.{
         .method = .GET,
         .location = .{ .url = "https://b.hatena.ne.jp" },
-        .response_storage = .{ .dynamic = &response },
+        .response_writer = &allocating.writer,
     });
 
-    std.debug.print("Result: {}\n", .{result.status});
-    std.debug.print("Response: {s}\n", .{response.items});
+    std.debug.print("Result: {}\n", .{response.status});
+    std.debug.print("Response: {s}\n", .{allocating.written()});
 }

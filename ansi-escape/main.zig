@@ -73,11 +73,13 @@ pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
 
-    var array = std.ArrayList(u8).init(allocator);
+    var array = std.array_list.Managed(u8).init(allocator);
     defer array.deinit();
     const w = array.writer();
 
-    const stdout = std.io.getStdOut().writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
 
     try FontColor.black.apply(w, "Hello, Zig!\n");
     try FontColor.red.apply(w, "Hello, Zig!\n");
@@ -98,4 +100,5 @@ pub fn main() !void {
     try BackgroundColor.white.apply(w, "Hello, ANSI!\n");
 
     try stdout.print("{s}", .{array.items});
+    try stdout.flush();
 }

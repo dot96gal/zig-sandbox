@@ -17,12 +17,12 @@ pub fn main() !void {
     const y: i32 = 16;
     const z: i32 = add(x, y);
 
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var stdout_buffer: [1024]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout = &stdout_writer.interface;
 
     try stdout.print("{d} + {d} = {d}\n", .{ x, y, z });
-    try bw.flush();
+    try stdout.flush();
 }
 
 test "test add" {
